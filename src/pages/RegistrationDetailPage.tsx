@@ -31,6 +31,8 @@ export default function RegistrationDetailPage() {
   const [surname, setSurname] = useState('')
   const [phone, setPhone] = useState('')
   const [saved, setSaved] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   useEffect(() => {
     if (!trackingNumber) return
@@ -66,6 +68,20 @@ export default function RegistrationDetailPage() {
       setError('Kaydetme başarısız.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (!trackingNumber) return
+    setDeleting(true)
+    try {
+      await RegistrationAPI.delete(trackingNumber)
+      navigate('/')
+    } catch {
+      setError('Silme başarısız.')
+      setShowDeleteConfirm(false)
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -269,17 +285,52 @@ export default function RegistrationDetailPage() {
               Oluşturulma: {new Date(registration.created_at).toLocaleString('tr-TR')}
             </div>
 
-            {/* Save button */}
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="w-full py-3 rounded-2xl bg-brand-primary text-white font-semibold text-sm hover:bg-brand-secondary transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {saving ? 'Kaydediliyor...' : saved ? 'Kaydedildi!' : 'Kaydet'}
-            </button>
+            {/* Action buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex-1 py-3 rounded-2xl bg-brand-primary text-white font-semibold text-sm hover:bg-brand-secondary transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {saving ? 'Kaydediliyor...' : saved ? 'Kaydedildi!' : 'Kaydet'}
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="px-5 py-3 rounded-2xl border border-status-error/30 text-status-error text-sm font-medium hover:bg-status-error-bg transition-colors"
+              >
+                Sil
+              </button>
+            </div>
           </div>
         )}
       </main>
+
+      {/* Delete confirmation modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-surface-primary rounded-2xl border border-border shadow-sm w-full max-w-sm mx-4 p-6">
+            <h3 className="text-lg font-bold text-content-primary mb-2">Başvuruyu Sil</h3>
+            <p className="text-sm text-content-secondary mb-5">
+              Bu başvuruyu silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium text-content-secondary hover:bg-surface-secondary transition-colors"
+              >
+                İptal
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 py-2.5 rounded-xl bg-status-error text-white text-sm font-semibold hover:opacity-90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {deleting ? 'Siliniyor...' : 'Evet, Sil'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

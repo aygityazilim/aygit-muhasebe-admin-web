@@ -26,6 +26,10 @@ export default function RegistrationListPage() {
   const [searchInput, setSearchInput] = useState('')
   const [page, setPage] = useState(1)
 
+  // Delete state
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+
   // Create modal state
   const [showCreate, setShowCreate] = useState(false)
   const [createForm, setCreateForm] = useState({ name: '', surname: '', phone: '', message: '' })
@@ -59,6 +63,21 @@ export default function RegistrationListPage() {
   function handleLogout() {
     localStorage.removeItem('admin_token')
     navigate('/login')
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return
+    setDeleteLoading(true)
+    try {
+      await RegistrationAPI.delete(deleteTarget)
+      setDeleteTarget(null)
+      fetchData(page, search)
+    } catch {
+      setError('Silme başarısız.')
+      setDeleteTarget(null)
+    } finally {
+      setDeleteLoading(false)
+    }
   }
 
   function handleCreateFormChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
@@ -207,10 +226,15 @@ export default function RegistrationListPage() {
                       <td className="px-4 py-3 text-content-secondary text-xs">
                         {new Date(reg.created_at).toLocaleDateString('tr-TR')}
                       </td>
-                      <td className="px-4 py-3 text-content-tertiary">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setDeleteTarget(reg.tracking_number) }}
+                          className="text-content-tertiary hover:text-status-error transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -245,6 +269,33 @@ export default function RegistrationListPage() {
           </>
         )}
       </main>
+
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-surface-primary rounded-2xl border border-border shadow-sm w-full max-w-sm mx-4 p-6">
+            <h3 className="text-lg font-bold text-content-primary mb-2">Başvuruyu Sil</h3>
+            <p className="text-sm text-content-secondary mb-5">
+              Bu başvuruyu silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium text-content-secondary hover:bg-surface-secondary transition-colors"
+              >
+                İptal
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleteLoading}
+                className="flex-1 py-2.5 rounded-xl bg-status-error text-white text-sm font-semibold hover:opacity-90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {deleteLoading ? 'Siliniyor...' : 'Evet, Sil'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create Modal */}
       {showCreate && (

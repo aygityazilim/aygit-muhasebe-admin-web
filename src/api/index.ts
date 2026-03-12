@@ -86,4 +86,7 @@ export const RegistrationAPI = {
 
   update: (trackingNumber: string, payload: Partial<Pick<Registration, 'name' | 'surname' | 'phone' | 'status'>>) =>
     client.patch<ApiResponse<Registration>>(`/registiration/${trackingNumber}`, payload),
+
+  delete: (trackingNumber: string) =>
+    client.delete<ApiResponse<Registration>>(`/registiration/${trackingNumber}`),
 }
