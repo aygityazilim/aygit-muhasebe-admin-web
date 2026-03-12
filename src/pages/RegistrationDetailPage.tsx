@@ -52,12 +52,13 @@ export default function RegistrationDetailPage() {
     setSaving(true)
     setError(null)
     try {
-      const res = await RegistrationAPI.update(trackingNumber, {
+      await RegistrationAPI.update(trackingNumber, {
         status,
         name: name || undefined,
         surname: surname || undefined,
         phone,
       })
+      const res = await RegistrationAPI.getOne(trackingNumber)
       setRegistration(res.data.data)
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)

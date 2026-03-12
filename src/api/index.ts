@@ -65,6 +65,13 @@ export const AuthAPI = {
     client.post<ApiResponse<string>>('/auth/login', { email, password }),
 }
 
+export interface RegistrationCreatePayload {
+  phone: string
+  message: string
+  name?: string
+  surname?: string
+}
+
 export const RegistrationAPI = {
   get: (skip: number, limit: number, search?: string) =>
     client.get<ApiResponse<PaginationResponse<Registration>>>('/registiration', {
@@ -74,6 +81,9 @@ export const RegistrationAPI = {
   getOne: (trackingNumber: string) =>
     client.get<ApiResponse<Registration>>(`/registiration/${trackingNumber}`),
 
+  create: (payload: RegistrationCreatePayload) =>
+    client.post<ApiResponse<Registration>>('/registiration/', payload),
+
   update: (trackingNumber: string, payload: Partial<Pick<Registration, 'name' | 'surname' | 'phone' | 'status'>>) =>
-    client.put<ApiResponse<Registration>>(`/registiration/${trackingNumber}`, payload),
+    client.patch<ApiResponse<Registration>>(`/registiration/${trackingNumber}`, payload),
 }

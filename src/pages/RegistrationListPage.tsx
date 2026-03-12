@@ -26,6 +26,12 @@ export default function RegistrationListPage() {
   const [searchInput, setSearchInput] = useState('')
   const [page, setPage] = useState(1)
 
+  // Create modal state
+  const [showCreate, setShowCreate] = useState(false)
+  const [createForm, setCreateForm] = useState({ name: '', surname: '', phone: '', message: '' })
+  const [createLoading, setCreateLoading] = useState(false)
+  const [createError, setCreateError] = useState<string | null>(null)
+
   const fetchData = useCallback(async (currentPage: number, currentSearch: string) => {
     setLoading(true)
     setError(null)
@@ -55,6 +61,37 @@ export default function RegistrationListPage() {
     navigate('/login')
   }
 
+  function handleCreateFormChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
+    setCreateForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
+    setCreateError(null)
+  }
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault()
+    if (!createForm.phone.trim() || !createForm.message.trim()) {
+      setCreateError('Telefon ve mesaj alanları zorunludur.')
+      return
+    }
+    setCreateLoading(true)
+    setCreateError(null)
+    try {
+      const res = await RegistrationAPI.create({
+        phone: createForm.phone,
+        message: createForm.message,
+        name: createForm.name || undefined,
+        surname: createForm.surname || undefined,
+      })
+      setShowCreate(false)
+      setCreateForm({ name: '', surname: '', phone: '', message: '' })
+      navigate(`/registrations/${res.data.data.tracking_number}`)
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { error?: string } } }
+      setCreateError(axiosError?.response?.data?.error || 'Başvuru oluşturulurken hata oluştu.')
+    } finally {
+      setCreateLoading(false)
+    }
+  }
+
   const list = pagination?.data ?? []
 
   return (
@@ -80,6 +117,15 @@ export default function RegistrationListPage() {
               {pagination ? `${pagination.count} başvuru` : ''}
             </p>
           </div>
+          <button
+            onClick={() => setShowCreate(true)}
+            className="px-4 py-2.5 rounded-xl bg-brand-primary text-white text-sm font-medium hover:bg-brand-secondary transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Yeni Başvuru
+          </button>
         </div>
 
         {/* Search */}
@@ -199,6 +245,102 @@ export default function RegistrationListPage() {
           </>
         )}
       </main>
+
+      {/* Create Modal */}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-surface-primary rounded-2xl border border-border shadow-sm w-full max-w-lg mx-4 p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-bold text-content-primary">Yeni Başvuru</h2>
+              <button
+                onClick={() => { setShowCreate(false); setCreateError(null) }}
+                className="text-content-tertiary hover:text-content-primary transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleCreate} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-content-secondary mb-1.5">Ad</label>
+                  <input
+                    name="name"
+                    value={createForm.name}
+                    onChange={handleCreateFormChange}
+                    placeholder="Adı"
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-surface-tertiary text-sm text-content-primary placeholder:text-content-tertiary focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-content-secondary mb-1.5">Soyad</label>
+                  <input
+                    name="surname"
+                    value={createForm.surname}
+                    onChange={handleCreateFormChange}
+                    placeholder="Soyadı"
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-surface-tertiary text-sm text-content-primary placeholder:text-content-tertiary focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-content-secondary mb-1.5">
+                  Telefon <span className="text-status-error">*</span>
+                </label>
+                <input
+                  name="phone"
+                  value={createForm.phone}
+                  onChange={handleCreateFormChange}
+                  placeholder="05XX XXX XX XX"
+                  required
+                  className="w-full px-3 py-2 rounded-xl border border-border bg-surface-tertiary text-sm text-content-primary placeholder:text-content-tertiary focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-content-secondary mb-1.5">
+                  Mesaj <span className="text-status-error">*</span>
+                </label>
+                <textarea
+                  name="message"
+                  value={createForm.message}
+                  onChange={handleCreateFormChange}
+                  placeholder="Başvuru mesajı"
+                  rows={4}
+                  required
+                  className="w-full px-3 py-2 rounded-xl border border-border bg-surface-tertiary text-sm text-content-primary placeholder:text-content-tertiary focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-colors resize-none"
+                />
+              </div>
+
+              {createError && (
+                <div className="bg-status-error-bg border border-status-error/20 rounded-xl px-3.5 py-2.5 text-sm text-status-error">
+                  {createError}
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => { setShowCreate(false); setCreateError(null) }}
+                  className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium text-content-secondary hover:bg-surface-secondary transition-colors"
+                >
+                  İptal
+                </button>
+                <button
+                  type="submit"
+                  disabled={createLoading}
+                  className="flex-1 py-2.5 rounded-xl bg-brand-primary text-white text-sm font-semibold hover:bg-brand-secondary transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {createLoading ? 'Oluşturuluyor...' : 'Oluştur'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
