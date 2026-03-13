@@ -90,3 +90,10 @@ export const RegistrationAPI = {
   delete: (trackingNumber: string) =>
     client.delete<ApiResponse<Registration>>(`/registiration/${trackingNumber}`),
 }
+
+export const ContractVerificationAPI = {
+  sendCode: (trackingNumber: string, contractId: number) =>
+    client.patch<ApiResponse<null>>(`/contract-verification/${trackingNumber}/send-code`, null, {
+      params: { contract: contractId },
+    }),
+}
