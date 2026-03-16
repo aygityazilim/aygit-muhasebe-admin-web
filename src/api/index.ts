@@ -91,6 +91,74 @@ export const RegistrationAPI = {
     client.delete<ApiResponse<Registration>>(`/registiration/${trackingNumber}`),
 }
 
+// Package types
+export interface Resource {
+  id: number
+  key: string
+  sort_order: number
+  is_menu: boolean
+  path: string | null
+  parent_id: number | null
+}
+
+export interface ListItem {
+  id: number
+  name: string
+  description: string | null
+  slug: string | null
+  metadata: Record<string, unknown> | null
+  image: string | null
+}
+
+export interface Package {
+  id: number
+  key: string
+  name: string
+  description: string | null
+  resources: Resource[]
+}
+
+export interface PackageCreatePayload {
+  key: string
+  name: string
+  description?: string
+  resource_ids: number[]
+}
+
+export interface PackageUpdatePayload {
+  key?: string
+  name?: string
+  description?: string
+  resource_ids?: number[]
+}
+
+export const ResourceAPI = {
+  getList: () =>
+    client.get<ApiResponse<ListItem[]>>('/resource/list'),
+}
+
+export const PackageAPI = {
+  get: (skip: number, limit: number, search?: string) =>
+    client.get<ApiResponse<PaginationResponse<Package>>>('/package', {
+      params: { skip, limit, ...(search ? { search } : {}) },
+    }),
+
+  getList: () =>
+    client.get<ApiResponse<ListItem[]>>('/package/list'),
+
+  getOne: (id: number) =>
+    client.get<ApiResponse<Package>>(`/package/${id}`),
+
+  create: (payload: PackageCreatePayload) =>
+    client.post<ApiResponse<Package>>('/package/', payload),
+
+  update: (id: number, payload: PackageUpdatePayload) =>
+    client.patch<ApiResponse<Package>>(`/package/${id}`, payload),
+
+  delete: (id: number) =>
+    client.delete<ApiResponse<Package>>(`/package/${id}`),
+}
+
 export const ContractVerificationAPI = {
   sendCode: (trackingNumber: string, contractId: number) =>
     client.patch<ApiResponse<null>>(`/contract-verification/${trackingNumber}/send-code`, null, {

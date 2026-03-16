@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { RegistrationAPI, type Registration, type PaginationResponse } from '../api'
-import AygitLogo from '../components/AygitLogo'
 
 const STATUS_LABELS: Record<string, string> = {
   pending: 'Bekliyor',
@@ -60,11 +59,6 @@ export default function RegistrationListPage() {
     setSearch(searchInput)
   }
 
-  function handleLogout() {
-    localStorage.removeItem('admin_token')
-    navigate('/login')
-  }
-
   async function handleDelete() {
     if (!deleteTarget) return
     setDeleteLoading(true)
@@ -114,21 +108,8 @@ export default function RegistrationListPage() {
   const list = pagination?.data ?? []
 
   return (
-    <div className="min-h-screen bg-surface-secondary">
-      <header className="bg-surface-primary border-b border-border px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <AygitLogo color="#6AD140" width={90} />
-          <span className="text-xs font-medium text-content-tertiary border-l border-border pl-3">Admin</span>
-        </div>
-        <button
-          onClick={handleLogout}
-          className="text-sm text-content-secondary hover:text-status-error transition-colors"
-        >
-          Çıkış Yap
-        </button>
-      </header>
-
-      <main className="max-w-5xl mx-auto px-4 py-8">
+    <div className="p-8">
+      <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-xl font-bold text-content-primary">Ön Kayıt Başvuruları</h1>
@@ -268,7 +249,7 @@ export default function RegistrationListPage() {
             )}
           </>
         )}
-      </main>
+      </div>
 
       {/* Delete Confirmation Modal */}
       {deleteTarget && (
