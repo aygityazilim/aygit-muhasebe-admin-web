@@ -33,8 +33,8 @@ export default function RegistrationDetailPage() {
   const [saved, setSaved] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [sendingCodeId, setSendingCodeId] = useState<number | null>(null)
-  const [codeSentId, setCodeSentId] = useState<number | null>(null)
+  const [sendingCodes, setSendingCodes] = useState(false)
+  const [codesSent, setCodesSent] = useState(false)
 
   const [refreshing, setRefreshing] = useState(false)
 
@@ -85,19 +85,19 @@ export default function RegistrationDetailPage() {
     }
   }
 
-  async function handleSendCode(contractId: number) {
+  async function handleSendCodes() {
     if (!trackingNumber) return
-    setSendingCodeId(contractId)
+    setSendingCodes(true)
     try {
-      await ContractVerificationAPI.sendCode(trackingNumber, contractId)
-      setCodeSentId(contractId)
-      setTimeout(() => setCodeSentId(null), 3000)
+      await ContractVerificationAPI.sendCode(trackingNumber)
+      setCodesSent(true)
+      setTimeout(() => setCodesSent(false), 3000)
       const res = await RegistrationAPI.getOne(trackingNumber)
       setRegistration(res.data.data)
     } catch {
-      setError('Kod gönderilemedi.')
+      setError('Kodlar gönderilemedi.')
     } finally {
-      setSendingCodeId(null)
+      setSendingCodes(false)
     }
   }
 
@@ -196,30 +196,26 @@ export default function RegistrationDetailPage() {
                             </svg>
                             Onaylandı
                           </span>
+                        ) : contract.sent_date ? (
+                          <span className="text-xs text-content-tertiary">
+                            Gönderildi: {new Date(contract.sent_date).toLocaleString('tr-TR')}
+                          </span>
                         ) : (
-                          <>
-                            {contract.sent_date && (
-                              <span className="text-xs text-content-tertiary">
-                                Gönderildi: {new Date(contract.sent_date).toLocaleString('tr-TR')}
-                              </span>
-                            )}
-                            <button
-                              onClick={() => handleSendCode(contract.id)}
-                              disabled={sendingCodeId === contract.id}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-brand-primary/10 text-brand-primary hover:bg-brand-primary/20 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                            >
-                              {sendingCodeId === contract.id
-                                ? 'Gönderiliyor...'
-                                : codeSentId === contract.id
-                                  ? 'Gönderildi!'
-                                  : 'Kod Gönder'}
-                            </button>
-                          </>
+                          <span className="text-xs text-content-tertiary">Kod gönderilmedi</span>
                         )}
                       </div>
                     </div>
                   ))}
                 </div>
+                {registration.contracts.some(c => !c.verified_code) && (
+                  <button
+                    onClick={handleSendCodes}
+                    disabled={sendingCodes}
+                    className="mt-3 w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium bg-brand-primary/10 text-brand-primary hover:bg-brand-primary/20 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {sendingCodes ? 'Gönderiliyor...' : codesSent ? 'Kodlar Gönderildi!' : 'Doğrulama Kodlarını Gönder'}
+                  </button>
+                )}
               </div>
             )}
 

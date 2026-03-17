@@ -229,8 +229,6 @@ export const CompanyAPI = {
 }
 
 export const ContractVerificationAPI = {
-  sendCode: (trackingNumber: string, contractId: number) =>
-    client.patch<ApiResponse<null>>(`/contract-verification/${trackingNumber}/send-code`, null, {
-      params: { contract: contractId },
-    }),
+  sendCode: (trackingNumber: string) =>
+    client.patch<ApiResponse<null>>(`/contract-verification/${trackingNumber}/send-code`),
 }
