@@ -232,3 +232,43 @@ export const ContractVerificationAPI = {
   sendCode: (trackingNumber: string) =>
     client.patch<ApiResponse<null>>(`/contract-verification/${trackingNumber}/send-code`),
 }
+
+// Ticket types
+export type TicketStatus = 'pending' | 'answered' | 'solved' | 'closed'
+export type TicketMessageType = 'question' | 'answer'
+
+export interface TicketMessage {
+  content: string
+  type: TicketMessageType
+  created_at: string
+}
+
+export interface Ticket {
+  uuid: string
+  title: string
+  status: TicketStatus
+  last_message_date: string
+  last_message: TicketMessage | null
+  created_at: string
+}
+
+export const TicketAPI = {
+  get: (skip: number, limit: number, search?: string) =>
+    client.get<ApiResponse<PaginationResponse<Ticket>>>('/ticket', {
+      params: { skip, limit, ...(search ? { search } : {}) },
+    }),
+
+  getOne: (uuid: string) =>
+    client.get<ApiResponse<Ticket>>(`/ticket/${uuid}`),
+
+  getMessages: (uuid: string) =>
+    client.get<ApiResponse<TicketMessage[]>>(`/ticket/${uuid}/message`),
+
+  answer: (uuid: string, content: string) =>
+    client.post<ApiResponse<Ticket>>(`/ticket/${uuid}/answer`, { content }),
+
+  updateStatus: (uuid: string, status: TicketStatus) =>
+    client.patch<ApiResponse<Ticket>>(`/ticket/${uuid}/status`, null, {
+      params: { status },
+    }),
+}
