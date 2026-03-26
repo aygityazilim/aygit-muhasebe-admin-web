@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   CompanyAPI,
   PackageAPI,
@@ -35,6 +35,7 @@ const EMPTY_FORM = {
   currency_id: 1,
   package_id: 0,
   is_accounting_firm: false,
+  accounting_company_id: 0,
 }
 
 export default function CompanyListPage() {
@@ -54,6 +55,14 @@ export default function CompanyListPage() {
   const [form, setForm] = useState({ ...EMPTY_FORM })
   const [modalLoading, setModalLoading] = useState(false)
   const [modalError, setModalError] = useState<string | null>(null)
+
+  // Accounting company search
+  const [accountingSearch, setAccountingSearch] = useState('')
+  const [accountingResults, setAccountingResults] = useState<ListItem[]>([])
+  const [accountingDropdownOpen, setAccountingDropdownOpen] = useState(false)
+  const [selectedAccountingCompany, setSelectedAccountingCompany] = useState<{ id: number; name: string } | null>(null)
+  const accountingSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const accountingDropdownRef = useRef<HTMLDivElement>(null)
 
   // Delete
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null)
@@ -91,6 +100,49 @@ export default function CompanyListPage() {
     fetchPackages()
   }, [page, search, fetchData, fetchPackages])
 
+  function handleAccountingSearch(value: string) {
+    setAccountingSearch(value)
+    if (accountingSearchTimer.current) clearTimeout(accountingSearchTimer.current)
+    if (!value.trim()) {
+      setAccountingResults([])
+      setAccountingDropdownOpen(false)
+      return
+    }
+    accountingSearchTimer.current = setTimeout(async () => {
+      try {
+        const res = await CompanyAPI.getAccountingCompanies(value)
+        setAccountingResults(res.data.data)
+        setAccountingDropdownOpen(true)
+      } catch {
+        setAccountingResults([])
+      }
+    }, 300)
+  }
+
+  function selectAccountingCompany(item: ListItem) {
+    setSelectedAccountingCompany({ id: item.id, name: item.name })
+    updateForm('accounting_company_id', item.id)
+    setAccountingSearch('')
+    setAccountingDropdownOpen(false)
+  }
+
+  function clearAccountingCompany() {
+    setSelectedAccountingCompany(null)
+    updateForm('accounting_company_id', 0)
+    setAccountingSearch('')
+    setAccountingResults([])
+  }
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (accountingDropdownRef.current && !accountingDropdownRef.current.contains(e.target as Node)) {
+        setAccountingDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
     setPage(1)
@@ -100,6 +152,8 @@ export default function CompanyListPage() {
   function openCreate() {
     setEditingId(null)
     setForm({ ...EMPTY_FORM })
+    setSelectedAccountingCompany(null)
+    setAccountingSearch('')
     setModalError(null)
     setShowModal(true)
   }
@@ -122,7 +176,9 @@ export default function CompanyListPage() {
         currency_id: 1,
         package_id: c.package?.id || 0,
         is_accounting_firm: c.is_accounting_firm || false,
+        accounting_company_id: c.accounting_company?.id || 0,
       })
+      setSelectedAccountingCompany(c.accounting_company ? { id: c.accounting_company.id, name: c.accounting_company.short_name } : null)
       setShowModal(true)
     } catch {
       setError('Şirket bilgileri yüklenemedi.')
@@ -152,6 +208,7 @@ export default function CompanyListPage() {
           package_id: form.package_id || undefined,
           is_accounting_firm: form.is_accounting_firm,
           currency_id: form.currency_id,
+          accounting_company_id: form.accounting_company_id || undefined,
         }
         await CompanyAPI.update(editingId, payload)
       } else {
@@ -166,6 +223,7 @@ export default function CompanyListPage() {
           currency_id: form.currency_id,
           package_id: form.package_id,
           is_accounting_firm: form.is_accounting_firm,
+          accounting_company_id: form.accounting_company_id || undefined,
         }
         await CompanyAPI.create(payload)
       }
@@ -423,6 +481,10 @@ export default function CompanyListPage() {
                   <p className="text-content-primary">{detailCompany.nes_username || '—'}</p>
                 </div>
                 <div>
+                  <span className="text-xs font-medium text-content-tertiary">Mali Müşavir Firması</span>
+                  <p className="text-content-primary">{detailCompany.accounting_company?.short_name || '—'}</p>
+                </div>
+                <div>
                   <span className="text-xs font-medium text-content-tertiary">Ortam</span>
                   <p className="text-content-primary">{detailCompany.environment || '—'}</p>
                 </div>
@@ -569,6 +631,52 @@ export default function CompanyListPage() {
                   </label>
                 </div>
               </div>
+
+              {!form.is_accounting_firm && <div>
+                <label className="block text-xs font-medium text-content-secondary mb-1.5">Mali Müşavir Firması Ataması</label>
+                <div className="relative" ref={accountingDropdownRef}>
+                  {selectedAccountingCompany ? (
+                    <div className="flex items-center justify-between w-full px-3 py-2 rounded-xl border border-border bg-surface-tertiary text-sm text-content-primary">
+                      <span>{selectedAccountingCompany.name}</span>
+                      <button
+                        type="button"
+                        onClick={clearAccountingCompany}
+                        className="text-content-tertiary hover:text-status-error transition-colors ml-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ) : (
+                    <input
+                      value={accountingSearch}
+                      onChange={(e) => handleAccountingSearch(e.target.value)}
+                      placeholder="Mali müşavir firması ara..."
+                      className="w-full px-3 py-2 rounded-xl border border-border bg-surface-tertiary text-sm text-content-primary placeholder:text-content-tertiary focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-colors"
+                    />
+                  )}
+                  {accountingDropdownOpen && accountingResults.length > 0 && (
+                    <div className="absolute z-10 mt-1 w-full bg-surface-primary border border-border rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                      {accountingResults.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => selectAccountingCompany(item)}
+                          className="w-full text-left px-3 py-2 text-sm text-content-primary hover:bg-surface-secondary transition-colors first:rounded-t-xl last:rounded-b-xl"
+                        >
+                          {item.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {accountingDropdownOpen && accountingResults.length === 0 && accountingSearch.trim() && (
+                    <div className="absolute z-10 mt-1 w-full bg-surface-primary border border-border rounded-xl shadow-lg px-3 py-2 text-sm text-content-tertiary">
+                      Sonuç bulunamadı
+                    </div>
+                  )}
+                </div>
+              </div>}
 
               {modalError && (
                 <div className="bg-status-error-bg border border-status-error/20 rounded-xl px-3.5 py-2.5 text-sm text-status-error">

@@ -178,6 +178,7 @@ export interface Company {
   environment: string | null
   is_esmm_user: boolean | null
   is_emm_user: boolean | null
+  accounting_company: Company | null
 }
 
 export interface CompanyCreatePayload {
@@ -191,6 +192,7 @@ export interface CompanyCreatePayload {
   currency_id: number
   package_id: number
   is_accounting_firm: boolean
+  accounting_company_id?: number
 }
 
 export interface CompanyUpdatePayload {
@@ -204,6 +206,7 @@ export interface CompanyUpdatePayload {
   package_id?: number
   is_accounting_firm?: boolean
   currency_id?: number
+  accounting_company_id?: number
 }
 
 export const CompanyAPI = {
@@ -226,6 +229,11 @@ export const CompanyAPI = {
 
   delete: (id: number) =>
     client.delete<ApiResponse<Company>>(`/company/${id}`),
+
+  getAccountingCompanies: (search?: string) =>
+    client.get<ApiResponse<ListItem[]>>('/company/accounting', {
+      params: search ? { search } : {},
+    }),
 }
 
 export const ContractVerificationAPI = {
