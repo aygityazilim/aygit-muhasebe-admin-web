@@ -26,12 +26,13 @@ const TYPE_STYLES: Record<CompanyType, string> = {
 }
 
 const EMPTY_FORM = {
-  full_name: '',
-  short_name: '',
+  title: '',
   tax_number: '',
   tax_department: '',
   address: '',
-  mersis_number: '',
+  district: '',
+  city: '',
+  country: 'Türkiye',
   type: 'llc' as CompanyType,
   currency_id: 1,
   package_id: 0,
@@ -175,19 +176,20 @@ export default function CompanyListPage() {
       const res = await CompanyAPI.getOne(id)
       const c = res.data.data
       setForm({
-        full_name: c.full_name,
-        short_name: c.short_name,
+        title: c.title,
         tax_number: c.tax_number,
-        tax_department: c.tax_department,
+        tax_department: c.tax_department || '',
         address: c.address,
-        mersis_number: c.mersis_number || '',
+        district: c.district,
+        city: c.city,
+        country: c.country,
         type: c.type,
         currency_id: 1,
         package_id: c.package?.id || 0,
         is_accounting_firm: c.is_accounting_firm || false,
         accounting_company_id: c.accounting_company?.id || 0,
       })
-      setSelectedAccountingCompany(c.accounting_company ? { id: c.accounting_company.id, name: c.accounting_company.short_name } : null)
+      setSelectedAccountingCompany(c.accounting_company ? { id: c.accounting_company.id, name: c.accounting_company.title } : null)
       setShowModal(true)
     } catch {
       setError('Şirket bilgileri yüklenemedi.')
@@ -198,7 +200,7 @@ export default function CompanyListPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!form.full_name.trim() || !form.tax_number.trim()) {
+    if (!form.title.trim() || !form.tax_number.trim()) {
       setModalError('Şirket adı ve vergi numarası zorunludur.')
       return
     }
@@ -207,12 +209,13 @@ export default function CompanyListPage() {
     try {
       if (editingId) {
         const payload: CompanyUpdatePayload = {
-          full_name: form.full_name,
-          short_name: form.short_name,
+          title: form.title,
           tax_number: form.tax_number,
-          tax_department: form.tax_department,
+          tax_department: form.tax_department || undefined,
           address: form.address,
-          mersis_number: form.mersis_number || undefined,
+          district: form.district || undefined,
+          city: form.city || undefined,
+          country: form.country || undefined,
           type: form.type,
           package_id: form.package_id || undefined,
           is_accounting_firm: form.is_accounting_firm,
@@ -222,12 +225,13 @@ export default function CompanyListPage() {
         await CompanyAPI.update(editingId, payload)
       } else {
         const payload: CompanyCreatePayload = {
-          full_name: form.full_name,
-          short_name: form.short_name,
+          title: form.title,
           tax_number: form.tax_number,
-          tax_department: form.tax_department,
+          tax_department: form.tax_department || undefined,
           address: form.address,
-          mersis_number: form.mersis_number || undefined,
+          district: form.district,
+          city: form.city,
+          country: form.country,
           type: form.type,
           currency_id: form.currency_id,
           package_id: form.package_id,
@@ -395,8 +399,8 @@ export default function CompanyListPage() {
                       onClick={() => viewDetail(company.id)}
                     >
                       <td className="px-4 py-3">
-                        <div className="font-medium text-content-primary">{company.short_name}</div>
-                        <div className="text-xs text-content-tertiary">{company.full_name}</div>
+                        <div className="font-medium text-content-primary">{company.title}</div>
+                        <div className="text-xs text-content-tertiary">{company.district} / {company.city}</div>
                       </td>
                       <td className="px-4 py-3 font-mono text-xs text-content-secondary">{company.tax_number}</td>
                       <td className="px-4 py-3">
@@ -419,7 +423,7 @@ export default function CompanyListPage() {
                             </svg>
                           </button>
                           <button
-                            onClick={() => setDeleteTarget({ id: company.id, name: company.short_name })}
+                            onClick={() => setDeleteTarget({ id: company.id, name: company.title })}
                             className="text-content-tertiary hover:text-status-error transition-colors"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -466,7 +470,7 @@ export default function CompanyListPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-surface-primary rounded-2xl border border-border shadow-sm w-full max-w-lg mx-4 p-6 max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-bold text-content-primary">{detailCompany.short_name}</h2>
+              <h2 className="text-lg font-bold text-content-primary">{detailCompany.title}</h2>
               <button onClick={() => setDetailCompany(null)} className="text-content-tertiary hover:text-content-primary transition-colors">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -475,13 +479,9 @@ export default function CompanyListPage() {
             </div>
             <div className="space-y-3 text-sm">
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <span className="text-xs font-medium text-content-tertiary">Tam Adı</span>
-                  <p className="text-content-primary">{detailCompany.full_name}</p>
-                </div>
-                <div>
-                  <span className="text-xs font-medium text-content-tertiary">Kısa Adı</span>
-                  <p className="text-content-primary">{detailCompany.short_name}</p>
+                <div className="col-span-2">
+                  <span className="text-xs font-medium text-content-tertiary">Ünvan</span>
+                  <p className="text-content-primary">{detailCompany.title}</p>
                 </div>
                 <div>
                   <span className="text-xs font-medium text-content-tertiary">Vergi No</span>
@@ -489,7 +489,7 @@ export default function CompanyListPage() {
                 </div>
                 <div>
                   <span className="text-xs font-medium text-content-tertiary">Vergi Dairesi</span>
-                  <p className="text-content-primary">{detailCompany.tax_department}</p>
+                  <p className="text-content-primary">{detailCompany.tax_department || '—'}</p>
                 </div>
                 <div>
                   <span className="text-xs font-medium text-content-tertiary">Tür</span>
@@ -504,12 +504,20 @@ export default function CompanyListPage() {
                 <span className="text-xs font-medium text-content-tertiary">Adres</span>
                 <p className="text-content-primary">{detailCompany.address}</p>
               </div>
-              {detailCompany.mersis_number && (
+              <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <span className="text-xs font-medium text-content-tertiary">MERSİS No</span>
-                  <p className="text-content-primary font-mono">{detailCompany.mersis_number}</p>
+                  <span className="text-xs font-medium text-content-tertiary">İlçe</span>
+                  <p className="text-content-primary">{detailCompany.district}</p>
                 </div>
-              )}
+                <div>
+                  <span className="text-xs font-medium text-content-tertiary">Şehir</span>
+                  <p className="text-content-primary">{detailCompany.city}</p>
+                </div>
+                <div>
+                  <span className="text-xs font-medium text-content-tertiary">Ülke</span>
+                  <p className="text-content-primary">{detailCompany.country}</p>
+                </div>
+              </div>
               <div>
                 <span className="text-xs font-medium text-content-tertiary">Paket</span>
                 <p className="text-content-primary">{detailCompany.package?.name || '—'}</p>
@@ -525,7 +533,7 @@ export default function CompanyListPage() {
                 </div>
                 <div>
                   <span className="text-xs font-medium text-content-tertiary">Mali Müşavir Firması</span>
-                  <p className="text-content-primary">{detailCompany.accounting_company?.short_name || '—'}</p>
+                  <p className="text-content-primary">{detailCompany.accounting_company?.title || '—'}</p>
                 </div>
                 <div>
                   <span className="text-xs font-medium text-content-tertiary">Ortam</span>
@@ -565,26 +573,14 @@ export default function CompanyListPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
-                <div>
+                <div className="col-span-2">
                   <label className="block text-xs font-medium text-content-secondary mb-1.5">
-                    Tam Adı <span className="text-status-error">*</span>
+                    Ünvan <span className="text-status-error">*</span>
                   </label>
                   <input
-                    value={form.full_name}
-                    onChange={(e) => updateForm('full_name', e.target.value)}
+                    value={form.title}
+                    onChange={(e) => updateForm('title', e.target.value)}
                     placeholder="Şirket Anonim Şirketi"
-                    required
-                    className="w-full px-3 py-2 rounded-xl border border-border bg-surface-tertiary text-sm text-content-primary placeholder:text-content-tertiary focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-content-secondary mb-1.5">
-                    Kısa Adı <span className="text-status-error">*</span>
-                  </label>
-                  <input
-                    value={form.short_name}
-                    onChange={(e) => updateForm('short_name', e.target.value)}
-                    placeholder="Şirket A.Ş."
                     required
                     className="w-full px-3 py-2 rounded-xl border border-border bg-surface-tertiary text-sm text-content-primary placeholder:text-content-tertiary focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-colors"
                   />
@@ -606,13 +602,12 @@ export default function CompanyListPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-content-secondary mb-1.5">
-                    Vergi Dairesi <span className="text-status-error">*</span>
+                    Vergi Dairesi
                   </label>
                   <input
                     value={form.tax_department}
                     onChange={(e) => updateForm('tax_department', e.target.value)}
                     placeholder="Kadıköy"
-                    required
                     className="w-full px-3 py-2 rounded-xl border border-border bg-surface-tertiary text-sm text-content-primary placeholder:text-content-tertiary focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-colors"
                   />
                 </div>
@@ -625,19 +620,46 @@ export default function CompanyListPage() {
                 <input
                   value={form.address}
                   onChange={(e) => updateForm('address', e.target.value)}
-                  placeholder="İstanbul, Türkiye"
+                  placeholder="Açık adres"
                   required
                   className="w-full px-3 py-2 rounded-xl border border-border bg-surface-tertiary text-sm text-content-primary placeholder:text-content-tertiary focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-colors"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-content-secondary mb-1.5">MERSİS No</label>
+                  <label className="block text-xs font-medium text-content-secondary mb-1.5">
+                    İlçe <span className="text-status-error">*</span>
+                  </label>
                   <input
-                    value={form.mersis_number}
-                    onChange={(e) => updateForm('mersis_number', e.target.value)}
-                    placeholder="0123456789012345"
+                    value={form.district}
+                    onChange={(e) => updateForm('district', e.target.value)}
+                    placeholder="Kadıköy"
+                    required
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-surface-tertiary text-sm text-content-primary placeholder:text-content-tertiary focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-content-secondary mb-1.5">
+                    Şehir <span className="text-status-error">*</span>
+                  </label>
+                  <input
+                    value={form.city}
+                    onChange={(e) => updateForm('city', e.target.value)}
+                    placeholder="İstanbul"
+                    required
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-surface-tertiary text-sm text-content-primary placeholder:text-content-tertiary focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-content-secondary mb-1.5">
+                    Ülke <span className="text-status-error">*</span>
+                  </label>
+                  <input
+                    value={form.country}
+                    onChange={(e) => updateForm('country', e.target.value)}
+                    placeholder="Türkiye"
+                    required
                     className="w-full px-3 py-2 rounded-xl border border-border bg-surface-tertiary text-sm text-content-primary placeholder:text-content-tertiary focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-colors"
                   />
                 </div>

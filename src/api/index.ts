@@ -164,13 +164,22 @@ export type CompanyType = 'jsc' | 'llc' | 'sp'
 
 export interface Company {
   id: number
-  full_name: string
-  short_name: string
+  logo: string | null
+  title: string
   tax_number: string
-  tax_department: string
+  tax_department: string | null
   address: string
+  district: string
+  city: string
+  country: string
+  name: string | null
+  surname: string | null
+  postal_code: string | null
+  phone: string | null
+  fax: string | null
+  mail: string | null
+  web_site: string | null
   slug: string
-  mersis_number: string | null
   type: CompanyType
   is_accounting_firm: boolean | null
   package: Package | null
@@ -182,12 +191,20 @@ export interface Company {
 }
 
 export interface CompanyCreatePayload {
-  full_name: string
-  short_name: string
+  title: string
   tax_number: string
-  tax_department: string
+  tax_department?: string
   address: string
-  mersis_number?: string
+  district: string
+  city: string
+  country: string
+  name?: string
+  surname?: string
+  postal_code?: string
+  phone?: string
+  fax?: string
+  mail?: string
+  web_site?: string
   type: CompanyType
   currency_id: number
   package_id: number
@@ -196,12 +213,20 @@ export interface CompanyCreatePayload {
 }
 
 export interface CompanyUpdatePayload {
-  full_name?: string
-  short_name?: string
+  title?: string
   tax_number?: string
   tax_department?: string
   address?: string
-  mersis_number?: string
+  district?: string
+  city?: string
+  country?: string
+  name?: string
+  surname?: string
+  postal_code?: string
+  phone?: string
+  fax?: string
+  mail?: string
+  web_site?: string
   type?: CompanyType
   package_id?: number
   is_accounting_firm?: boolean
