@@ -8,6 +8,7 @@ import {
   type PaginationResponse,
   type CompanyCreatePayload,
   type CompanyUpdatePayload,
+  type CompanyUserCreatePayload,
 } from '../api'
 
 const PAGE_SIZE = 10
@@ -71,6 +72,14 @@ export default function CompanyListPage() {
   // Detail
   const [detailCompany, setDetailCompany] = useState<Company | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
+
+  // Create User modal
+  const [showUserModal, setShowUserModal] = useState(false)
+  const [userModalCompanyId, setUserModalCompanyId] = useState<number | null>(null)
+  const [userForm, setUserForm] = useState({ name: '', surname: '', email: '', phone: '' })
+  const [userModalLoading, setUserModalLoading] = useState(false)
+  const [userModalError, setUserModalError] = useState<string | null>(null)
+  const [userModalSuccess, setUserModalSuccess] = useState(false)
 
   const fetchData = useCallback(async (currentPage: number, currentSearch: string) => {
     setLoading(true)
@@ -266,6 +275,40 @@ export default function CompanyListPage() {
 
   function updateForm(field: string, value: unknown) {
     setForm(prev => ({ ...prev, [field]: value }))
+  }
+
+  function openUserModal(companyId: number) {
+    setUserModalCompanyId(companyId)
+    setUserForm({ name: '', surname: '', email: '', phone: '' })
+    setUserModalError(null)
+    setUserModalSuccess(false)
+    setShowUserModal(true)
+  }
+
+  async function handleCreateUser(e: React.FormEvent) {
+    e.preventDefault()
+    if (!userForm.name.trim() || !userForm.surname.trim() || !userForm.email.trim() || !userForm.phone.trim()) {
+      setUserModalError('Tüm alanlar zorunludur.')
+      return
+    }
+    if (!userModalCompanyId) return
+    setUserModalLoading(true)
+    setUserModalError(null)
+    try {
+      await CompanyAPI.createUser({
+        name: userForm.name,
+        surname: userForm.surname,
+        email: userForm.email,
+        phone: userForm.phone,
+        company_id: userModalCompanyId,
+      })
+      setUserModalSuccess(true)
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { error?: string } } }
+      setUserModalError(axiosError?.response?.data?.error || 'Kullanıcı oluşturulurken hata oluştu.')
+    } finally {
+      setUserModalLoading(false)
+    }
   }
 
   const list = pagination?.data ?? []
@@ -488,6 +531,17 @@ export default function CompanyListPage() {
                   <span className="text-xs font-medium text-content-tertiary">Ortam</span>
                   <p className="text-content-primary">{detailCompany.environment || '—'}</p>
                 </div>
+              </div>
+              <div className="pt-4 border-t border-border mt-4">
+                <button
+                  onClick={() => { openUserModal(detailCompany.id); setDetailCompany(null) }}
+                  className="w-full py-2.5 rounded-xl bg-brand-primary text-white text-sm font-semibold hover:bg-brand-secondary transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                  Kullanıcı Oluştur
+                </button>
               </div>
             </div>
           </div>
@@ -728,6 +782,116 @@ export default function CompanyListPage() {
                 {deleteLoading ? 'Siliniyor...' : 'Evet, Sil'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create User Modal */}
+      {showUserModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-surface-primary rounded-2xl border border-border shadow-sm w-full max-w-lg mx-4 p-6">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-bold text-content-primary">Kullanıcı Oluştur</h2>
+              <button onClick={() => setShowUserModal(false)} className="text-content-tertiary hover:text-content-primary transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {userModalSuccess ? (
+              <div>
+                <div className="bg-status-success-bg border border-status-success/20 rounded-xl px-3.5 py-2.5 text-sm text-status-success mb-4">
+                  Kullanıcı başarıyla oluşturuldu. Giriş bilgileri e-posta ile gönderildi.
+                </div>
+                <button
+                  onClick={() => setShowUserModal(false)}
+                  className="w-full py-2.5 rounded-xl border border-border text-sm font-medium text-content-secondary hover:bg-surface-secondary transition-colors"
+                >
+                  Kapat
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleCreateUser} className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-content-secondary mb-1.5">
+                      Ad <span className="text-status-error">*</span>
+                    </label>
+                    <input
+                      value={userForm.name}
+                      onChange={(e) => setUserForm(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Ad"
+                      required
+                      className="w-full px-3 py-2 rounded-xl border border-border bg-surface-tertiary text-sm text-content-primary placeholder:text-content-tertiary focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-content-secondary mb-1.5">
+                      Soyad <span className="text-status-error">*</span>
+                    </label>
+                    <input
+                      value={userForm.surname}
+                      onChange={(e) => setUserForm(prev => ({ ...prev, surname: e.target.value }))}
+                      placeholder="Soyad"
+                      required
+                      className="w-full px-3 py-2 rounded-xl border border-border bg-surface-tertiary text-sm text-content-primary placeholder:text-content-tertiary focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-colors"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-content-secondary mb-1.5">
+                    E-posta <span className="text-status-error">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={userForm.email}
+                    onChange={(e) => setUserForm(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="ornek@sirket.com"
+                    required
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-surface-tertiary text-sm text-content-primary placeholder:text-content-tertiary focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-content-secondary mb-1.5">
+                    Telefon <span className="text-status-error">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    value={userForm.phone}
+                    onChange={(e) => setUserForm(prev => ({ ...prev, phone: e.target.value }))}
+                    placeholder="05XX XXX XX XX"
+                    required
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-surface-tertiary text-sm text-content-primary placeholder:text-content-tertiary focus:outline-none focus:ring-2 focus:ring-brand-primary/30 focus:border-brand-primary transition-colors"
+                  />
+                </div>
+
+                {userModalError && (
+                  <div className="bg-status-error-bg border border-status-error/20 rounded-xl px-3.5 py-2.5 text-sm text-status-error">
+                    {userModalError}
+                  </div>
+                )}
+
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowUserModal(false)}
+                    className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium text-content-secondary hover:bg-surface-secondary transition-colors"
+                  >
+                    İptal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={userModalLoading}
+                    className="flex-1 py-2.5 rounded-xl bg-brand-primary text-white text-sm font-semibold hover:bg-brand-secondary transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {userModalLoading ? 'Oluşturuluyor...' : 'Oluştur'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

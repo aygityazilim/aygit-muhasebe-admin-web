@@ -234,6 +234,17 @@ export const CompanyAPI = {
     client.get<ApiResponse<ListItem[]>>('/company/accounting', {
       params: search ? { search } : {},
     }),
+
+  createUser: (payload: CompanyUserCreatePayload) =>
+    client.post<ApiResponse<null>>('/company/user', payload),
+}
+
+export interface CompanyUserCreatePayload {
+  name: string
+  surname: string
+  email: string
+  phone: string
+  company_id: number
 }
 
 export const ContractVerificationAPI = {
