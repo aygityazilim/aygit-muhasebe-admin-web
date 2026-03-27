@@ -8,7 +8,6 @@ import {
   type PaginationResponse,
   type CompanyCreatePayload,
   type CompanyUpdatePayload,
-  type CompanyUserCreatePayload,
 } from '../api'
 
 const PAGE_SIZE = 10
